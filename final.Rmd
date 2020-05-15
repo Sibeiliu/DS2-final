@@ -1,0 +1,27 @@
+---
+title: "Untitled"
+author: "Yue Lai"
+date: "5/15/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readxl)
+library(tidyverse)
+```
+
+# import data
+
+```{r}
+red = read_excel(path = "./data/wine.xlsx", sheet = "red") %>% 
+  janitor::clean_names() %>% 
+  mutate(category = "red")
+
+white = read_excel(path = "./data/wine.xlsx", sheet = "white") %>% 
+  janitor::clean_names() %>% 
+  mutate(category = "white")
+
+wine = rbind(red, white)
+```
+
