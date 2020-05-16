@@ -1,0 +1,169 @@
+---
+title: "Untitled"
+author: "Yue Lai"
+date: "5/16/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readxl)
+library(tidyverse)
+library(AppliedPredictiveModeling)
+library(caret)
+library(pROC)
+
+library(rpart.plot)
+library(ranger)
+set.seed(666)
+```
+
+# import data
+
+```{r}
+red = read_excel(path = "./data/wine.xlsx", sheet = "red") %>% 
+  janitor::clean_names() 
+
+white = read_excel(path = "./data/wine.xlsx", sheet = "white") %>% 
+  janitor::clean_names() 
+
+wine = data.frame(rbind(red, white))
+
+wine = wine %>% 
+  mutate(quality = as.factor(ifelse(quality > 5, "good", "bad")))
+```
+
+Divide the data into two part (training and test)
+
+```{r}
+rowtrain = createDataPartition(y = wine$quality,
+                               p = 2/3,
+                               list = FALSE)
+
+ctrl = trainControl(method = "repeatedcv",
+                    repeats = 5,
+                    summaryFunction = twoClassSummary,
+                    classProbs = TRUE)
+```
+
+# tree
+
+```{r}
+## using caret
+rpart.fit = train(quality~., wine,
+                  subset = rowtrain,
+                  method = "rpart",
+                  tuneGrid = data.frame(cp = exp(seq(-6, -2, len = 20))),
+                  trControl = ctrl,
+                  metric = "ROC")
+ggplot(rpart.fit, highlight = TRUE)
+rpart.plot(rpart.fit$finalModel)
+```
+
+```{r}
+library(rpart)
+tree1 = rpart(formula = quality~., data = wine,
+              subset = rowtrain,
+              control = rpart.control(cp = 0))
+cpTable = printcp(tree1)
+plotcp(tree1)
+minErr = which.min(cpTable[,4])
+
+tree2 = prune(tree1, cp = cpTable[minErr, 1])
+rpart.plot(tree2)
+```
+
+#  bagging and random forests
+
+```{r}
+## using caret (跑半天出不来)
+rf.grid = expand.grid(mtry = 1:6,
+                      splitrule = "gini",
+                      min.node.size = 1:6)
+
+rpart.fit = train(quality~., wine,
+                  subset = rowtrain,
+                  method = "ranger",
+                  tuneGrid = rf.grid,
+                  trControl = ctrl,
+                  metric = "ROC")
+
+ggplot(rpart.fit,highlight = TRUE)
+```
+
+```{r}
+library(randomForest)
+# bagging
+bagging = randomForest(quality~., wine[rowtrain,],mtry = 11)
+
+bagging.per = ranger(quality~., wine[rowtrain,],
+                     mtry = 11, 
+                     splitrule = "gini",
+                     min.node.size = 5,
+                     importance = "permutation",
+                     scale.permutation.importance = TRUE)
+
+barplot(sort(ranger::importance(bagging.per), decreasing = FALSE),
+        las = 2, horiz = TRUE, cex.names = 0.7, 
+        col = colorRampPalette(colors = c("darkred","white", "darkblue"))(11))
+
+# random forest
+rf = randomForest(quality~., wine[rowtrain,],mtry = 3)
+
+rf.per = ranger(quality~., wine[rowtrain,],
+                     mtry = 3, 
+                     splitrule = "gini",
+                     min.node.size = 5,
+                     importance = "permutation",
+                     scale.permutation.importance = TRUE)
+
+barplot(sort(ranger::importance(rf.per), decreasing = FALSE),
+        las = 2, horiz = TRUE, cex.names = 0.7, 
+        col = colorRampPalette(colors = c("darkred","white", "darkblue"))(11))
+```
+
+# boosting
+
+```{r}
+library(gbm)
+wine2 = wine
+wine2$quality = as.numeric(wine2$quality == "good")
+bst = gbm(quality~., wine2[rowtrain,], 
+          distribution = "adaboost",
+          n.trees = 20000,
+          interaction.depth = 3,
+          shrinkage = 0.001, 
+          cv.folds = 10)
+nt = gbm.perf(bst, method = "cv")
+
+summary(bst, las = 2, cBars = 8, cex.names = 0.6)
+```
+
+
+
+```{r}
+tree.pred = predict(tree2, newdata = wine[-rowtrain,], type = "prob")[,1]
+bag.pred = predict(bagging, newdata = wine[-rowtrain,], type = "prob")[,1]
+rf.pred = predict(rf, newdata = wine[-rowtrain,], type = "prob")[,1]
+
+bst.pred = predict(bst, newdata = wine[-rowtrain,], type = "response")
+
+roc.tree = roc(wine$quality[-rowtrain], tree.pred)
+roc.bag = roc(wine$quality[-rowtrain], bag.pred)
+roc.rf = roc(wine$quality[-rowtrain], rf.pred)
+roc.bst = roc(wine$quality[-rowtrain], bst.pred)
+
+
+auc = c(roc.tree$auc[1], roc.bag$auc[1], roc.rf$auc[1], roc.bst$aur[1])
+
+plot(roc.tree, legacy.axes = TRUE)
+plot(roc.bag, col = 2, add = TRUE)
+plot(roc.rf, col = 3, add = TRUE)
+plot(roc.bst, col = 4, add = TRUE)
+
+modelNames = c("tree", "bagging", "rf", "boosting")
+
+legend("bottomright", legend = paste0(modelNames, ": ", round(auc, 3)),
+       col = 1:4, lwd = 2)
+```
+
