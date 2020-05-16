@@ -1,0 +1,86 @@
+---
+title: "HR"
+author: "YI LIU"
+date: "5/16/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readxl)
+library(tidyverse)
+library(AppliedPredictiveModeling)
+library(caret)
+library(pROC)
+
+set.seed(666)
+```
+
+# import data
+
+```{r}
+US1 = read_excel(path = "./data/HD.xlsx", sheet = "US1") %>% 
+  janitor::clean_names() %>% 
+  mutate(hospital = "US1")
+
+US2 = read_excel(path = "./data/HD.xlsx", sheet = "US2") %>% 
+  janitor::clean_names() %>% 
+  mutate(hospital = "US2")
+
+EU1 = read_excel(path = "./data/HD.xlsx", sheet = "EU1") %>% 
+  janitor::clean_names() %>% 
+  mutate(hospital = "EU1")
+
+EU2 = read_excel(path = "./data/HD.xlsx", sheet = "EU2") %>% 
+  janitor::clean_names() %>% 
+  mutate(hospital = "EU2")
+
+hd = data.frame(rbind(US1,US2,EU1,EU2))
+
+hd = hd %>% 
+     mutate(
+       diagnew = ifelse(diag == 0, 0, 1),
+       diagnew = factor(diagnew, levels = c(0,1), ordered = T)
+     ) %>% 
+    select(-hospital,-diag)
+
+theme1 = transparentTheme(trans = .4)
+theme1$strip.background$col = rgb(.0, .6, .2, .2)
+trellis.par.set(theme1)
+
+featurePlot(x = hd[,1:13],
+            y = hd$diagnew,
+            scales = list(x = list(relation = "free"),
+                          y = list(relation = "free")),
+            plot = "density", pch = "|",
+            auto.key = list(columns = 2))
+
+hd = hd %>% 
+     mutate(
+       sex = factor(sex, levels=c(0,1),labels=c("female","male")),
+       cp = factor(cp, levels=c(1,2,3,4)),
+       fbs = factor(fbs, levels = c(0,1)),
+       restecg = factor(restecg, levels = c(0,1,2)),
+       exang = factor(exang, levels = c(0,1)),
+       slope = factor(slope, levels = c(1,2,3)),
+       thal = factor(thal, levels = c(3,6,7))
+     ) 
+    
+```
+
+The data contains 920 observations and 14 variables. The outcome is the binary variable category. We start from some simple visualization of the data. 
+
+
+Divide the data into two part (training and test)
+
+```{r}
+rowtrain = createDataPartition(y = hd$diagnew,
+                               p = 800/920,
+                               list = FALSE)
+
+ctrl = trainControl(method = "repeatedcv",
+                    repeats = 5,
+                    summaryFunction = twoClassSummary,
+                    classProbs = TRUE)
+```
+
