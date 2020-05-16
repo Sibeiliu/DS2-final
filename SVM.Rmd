@@ -1,0 +1,75 @@
+---
+title: "SVM"
+author: "Sibei Liu sl4660"
+date: "2020/5/16"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ISLR)
+library(e1071)
+library(caret)
+library(tidyverse)
+library(readxl)
+```
+
+
+```{r}
+# import data
+
+red = read_excel(path = "./data/wine.xlsx", sheet = "red") %>% 
+  janitor::clean_names() 
+
+white = read_excel(path = "./data/wine.xlsx", sheet = "white") %>% 
+  janitor::clean_names() 
+
+wine = data.frame(rbind(red, white))
+
+wine = wine %>% 
+  mutate(quality = as.factor(ifelse(quality > 5, "good", "bad")))
+```
+
+Divide the data into two part (training and test)
+
+```{r}
+set.seed(666)
+rowtrain = createDataPartition(y = wine$quality,
+                               p = 2/3,
+                               list = FALSE)
+
+ctrl = trainControl(method = "repeatedcv",
+                    repeats = 5,
+                    summaryFunction = twoClassSummary,
+                    classProbs = TRUE)
+```
+
+# Linear
+```{r}
+linear_svm <- tune.svm(quality~., 
+                  data = wine[rowtrain,], 
+                  kernal = "linear",
+                  cost = data.frame(cost = exp(seq(-20,-15,len=50))))
+linear_svm$best.parameters
+```
+
+
+# Radial
+```{r}
+radi_svm <- tune.svm(quality~., 
+                  data = wine[rowtrain,], 
+                  kernal = "radial",
+                  cost = data.frame(cost = exp(seq(-20,-15,len=50))))
+radi_svm$best.parameters
+```
+
+# only error rate can be obtained
+```{r}
+linea.svm.pred = predict(linear_svm$best.model, newdata = wine[-rowtrain,],type = "prob")
+radial.svm.pred = predict(radi_svm$best.model, newdata = wine[-rowtrain,], type = "prob")
+
+error_linear=1-sum(linea.svm.pred==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
+error_radial=1-sum(radial.svm.pred==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
+```
+
+

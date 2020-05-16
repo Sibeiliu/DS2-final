@@ -139,6 +139,21 @@ nt = gbm.perf(bst, method = "cv")
 summary(bst, las = 2, cBars = 8, cex.names = 0.6)
 ```
 
+## boosting in train
+```{r}
+## (long time to run )
+gbm.grid_2 <- expand.grid(n.trees = c(2000,3000,4000),
+                   interaction.depth = 1:6,
+                 shrinkage = c(0.001, 0.003,0.005),
+                n.minobsinnode = 1)
+gbm.fit_2 <- train(quality~., wine[rowtrain,],
+                  method = "gbm",
+                  tuneGrid = gbm.grid_2,
+                  trControl = ctrl,
+                   metric = "ROC",
+                 verbose = FALSE)
+ggplot(gbm.fit_2, highlight = TRUE)
+```
 
 
 ```{r}
