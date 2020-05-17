@@ -234,6 +234,33 @@ error_bag=1-sum(bag.pred2==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
 error_rf=1-sum(rf.pred2==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
 error_bst=1-sum(bst.pred2[,2]==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
 
+# test misclassification
 data.frame(model=c("SVM_linear","SVM_radial","Tree","Bagging","Random_forest","Boosting"),error_rate=c(error_linear,error_radial,error_tree,error_bag,error_rf,error_bst)) %>% knitr::kable()
+```
+
+```{r}
+# train data misclassification rate
+linea.svm.pred3 = predict(linear_svm$best.model, newdata = wine[rowtrain,],type = "prob")%>% as.data.frame()
+radial.svm.pred3 = predict(radi_svm$best.model, newdata = wine[rowtrain,], type = "prob")%>% as.data.frame()
+
+error_linear3=1-sum(linea.svm.pred3==wine[rowtrain,12])/nrow(wine[rowtrain,])
+error_radial3=1-sum(radial.svm.pred3==wine[rowtrain,12])/nrow(wine[rowtrain,])
+
+tree.pred3 = predict(tree2, newdata = wine[rowtrain,],type="class") %>% as.data.frame()
+bag.pred3 = predict(bagging, newdata = wine[rowtrain,],type="class")%>% as.data.frame()
+rf.pred3 = predict(rf, newdata = wine[rowtrain,],type="class")%>% as.data.frame()
+bst.pred3 = predict(bst, newdata = wine[rowtrain,], type = "response") %>% as.data.frame() %>% mutate(label=case_when(
+  .<0.5~"bad",
+  .>0.5~"good"
+))
+
+
+error_tree3=1-sum(tree.pred3 ==wine[rowtrain,12])/nrow(wine[rowtrain,])
+error_bag3=1-sum(bag.pred3==wine[rowtrain,12])/nrow(wine[rowtrain,])
+error_rf3=1-sum(rf.pred3==wine[rowtrain,12])/nrow(wine[rowtrain,])
+error_bst3=1-sum(bst.pred3[,2]==wine[rowtrain,12])/nrow(wine[rowtrain,])
+
+# train
+data.frame(model=c("SVM_linear","SVM_radial","Tree","Bagging","Random_forest","Boosting"),error_rate=c(error_linear3,error_radial3,error_tree3,error_bag3,error_rf3,error_bst3)) %>% knitr::kable()
 ```
 

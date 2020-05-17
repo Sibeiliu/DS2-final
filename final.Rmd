@@ -178,7 +178,21 @@ glmn=1-sum(predict(model.glmn, newdata = wine[-rowtrain,])%>% as.data.frame()==w
 lda =1-sum(predict(model.lda, newdata = wine[-rowtrain,])%>% as.data.frame()==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
 qda =1-sum(predict(model.qda, newdata = wine[-rowtrain,])%>% as.data.frame()==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
 
+# test data misclassification rate
 T1=data.frame(model=c("GLM","GLMN","LDA","QDA","KNN"),Error_rate=c(glm,glmn,lda,qda,knn)) %>% knitr::kable()
 T1
+```
+
+```{r}
+# train data misclassification rate
+glm1=1-sum(predict(model.glm, newdata = wine[rowtrain,]) %>% as.data.frame()==wine[rowtrain,12])/nrow(wine[rowtrain,])
+knn1=1-sum(predict(model.knn, newdata = wine[rowtrain,])%>% as.data.frame()==wine[rowtrain,12])/nrow(wine[rowtrain,])
+glmn1=1-sum(predict(model.glmn, newdata = wine[rowtrain,])%>% as.data.frame()==wine[rowtrain,12])/nrow(wine[rowtrain,])
+lda1 =1-sum(predict(model.lda, newdata = wine[rowtrain,])%>% as.data.frame()==wine[rowtrain,12])/nrow(wine[rowtrain,])
+qda1 =1-sum(predict(model.qda, newdata = wine[rowtrain,])%>% as.data.frame()==wine[rowtrain,12])/nrow(wine[rowtrain,])
+
+
+T2=data.frame(model=c("GLM","GLMN","LDA","QDA","KNN"),Error_rate=c(glm1,glmn1,lda1,qda1,knn1)) %>% knitr::kable()
+T2
 ```
 
