@@ -16,6 +16,7 @@ library(glmnet)
 library(MASS)
 library(e1071)
 library(pROC)
+library(corrplot)
 ```
 
 ```{r}
@@ -62,6 +63,7 @@ featurePlot(x = red[, 1:11],
                           y=list(relation="free")),
             plot = "density", pch = "|", 
             auto.key = list(columns = 2))
+
 ```
 # divide the dataset into two parts (training and test)
 ```{r}
@@ -69,6 +71,8 @@ set.seed(1)
 rowtrain <- createDataPartition(y = red$quality,
                                 p = 2/3,
                                 list = FALSE)
+x_train = model.matrix(quality~.,red[rowtrain,])[,-1]
+corrplot(cor(x_train), method="square", type="full")
 ```
 
 # glm
@@ -84,6 +88,7 @@ model.glm = train(x = red[rowtrain, 1:11],
                   method = "glm",
                   metric = "ROC",
                   trControl = ctrl)
+summary(model.glm)
 
 ```
 
@@ -101,6 +106,7 @@ model.glmn = train(x = red[rowtrain, 1:11],
                   trControl = ctrl)
 plot(model.glmn, xTrans = function(x) log(x))
 model.glmn$bestTune
+summary(model.glmn)
 ```
 
 #lda
