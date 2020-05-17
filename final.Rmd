@@ -27,8 +27,8 @@ white = read_excel(path = "./data/wine.xlsx", sheet = "white") %>%
 
 wine = data.frame(rbind(red, white))
 
-wine = wine %>% 
-  mutate(quality = as.factor(ifelse(quality > 5, "good", "bad")))
+wine = red %>% 
+  mutate(quality = as.factor(ifelse(quality > 6.5, "good", "bad")))
 ```
 
 The data contains 6497 observations and 11 variables. The outcome is the binary variable category. We start from some simple visualization of the data. 
@@ -172,11 +172,11 @@ legend("bottomright", legend = paste0(modelNames, ": ", round(auc, 3)))
 
 
 ```{r}
-glm=1-sum(predict(model.glm, newdata = wine[-rowtrain,])==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
-knn=1-sum(predict(model.knn, newdata = wine[-rowtrain,])==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
-glmn=1-sum(predict(model.glmn, newdata = wine[-rowtrain,])==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
-lda =1-sum(predict(model.lda, newdata = wine[-rowtrain,])==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
-qda =1-sum(predict(model.qda, newdata = wine[-rowtrain,])==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
+glm=1-sum(predict(model.glm, newdata = wine[-rowtrain,]) %>% as.data.frame()==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
+knn=1-sum(predict(model.knn, newdata = wine[-rowtrain,])%>% as.data.frame()==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
+glmn=1-sum(predict(model.glmn, newdata = wine[-rowtrain,])%>% as.data.frame()==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
+lda =1-sum(predict(model.lda, newdata = wine[-rowtrain,])%>% as.data.frame()==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
+qda =1-sum(predict(model.qda, newdata = wine[-rowtrain,])%>% as.data.frame()==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
 
 T1=data.frame(model=c("GLM","GLMN","LDA","QDA","KNN"),Error_rate=c(glm,glmn,lda,qda,knn)) %>% knitr::kable()
 T1
