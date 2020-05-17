@@ -177,5 +177,9 @@ modelNames = c("glm", "glmn", "lda", "qda",
 #               "nb", 
                "knn")
 legend("bottomright", legend = paste0(modelNames, ": ", round(auc, 3)))
+
+
+knn=(predict(model.knn, newdata = wine[-rowtrain,])==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
+
 ```
 
