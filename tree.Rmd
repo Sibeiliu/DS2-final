@@ -2,7 +2,7 @@
 title: "Untitled"
 author: "Yue Lai"
 date: "5/16/2020"
-output: html_document
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
@@ -12,7 +12,9 @@ library(tidyverse)
 library(AppliedPredictiveModeling)
 library(caret)
 library(pROC)
-
+library(ISLR)
+library(e1071)
+library(caret)
 library(rpart.plot)
 library(ranger)
 set.seed(666)
@@ -76,19 +78,19 @@ rpart.plot(tree2)
 #  bagging and random forests
 
 ```{r}
-## using caret (跑半天出不来)
-rf.grid = expand.grid(mtry = 1:6,
-                      splitrule = "gini",
-                      min.node.size = 1:6)
+## using caret 
+#rf.grid = expand.grid(mtry = 1:6,
+ #                     splitrule = "gini",
+  #                    min.node.size = 1:6)
 
-rpart.fit = train(quality~., wine,
-                  subset = rowtrain,
-                  method = "ranger",
-                  tuneGrid = rf.grid,
-                  trControl = ctrl,
-                  metric = "ROC")
+#rpart.fit = train(quality~., wine,
+ #                 subset = rowtrain,
+  #                method = "ranger",
+   #               tuneGrid = rf.grid,
+    #              trControl = ctrl,
+     #             metric = "ROC")
 
-ggplot(rpart.fit,highlight = TRUE)
+#ggplot(rpart.fit,highlight = TRUE)
 ```
 
 ```{r}
@@ -142,17 +144,17 @@ summary(bst, las = 2, cBars = 8, cex.names = 0.6)
 ## boosting in train
 ```{r}
 ## (long time to run )
-gbm.grid_2 <- expand.grid(n.trees = c(2000,3000,4000),
-                   interaction.depth = 1:6,
-                 shrinkage = c(0.001, 0.003,0.005),
-                n.minobsinnode = 1)
-gbm.fit_2 <- train(quality~., wine[rowtrain,],
-                  method = "gbm",
-                  tuneGrid = gbm.grid_2,
-                  trControl = ctrl,
-                   metric = "ROC",
-                 verbose = FALSE)
-ggplot(gbm.fit_2, highlight = TRUE)
+#gbm.grid_2 <- expand.grid(n.trees = c(2000,3000,4000),
+ #                  interaction.depth = 1:6,
+#                 shrinkage = c(0.001, 0.003,0.005),
+ #               n.minobsinnode = 1)
+#gbm.fit_2 <- train(quality~., wine[rowtrain,],
+ #                 method = "gbm",
+  #                tuneGrid = gbm.grid_2,
+   #               trControl = ctrl,
+    #               metric = "ROC",
+     #            verbose = FALSE)
+#ggplot(gbm.fit_2, highlight = TRUE)
 ```
 
 
@@ -180,5 +182,43 @@ modelNames = c("tree", "bagging", "rf", "boosting")
 
 legend("bottomright", legend = paste0(modelNames, ": ", round(auc, 3)),
        col = 1:4, lwd = 2)
+```
+
+# Linear
+```{r}
+linear_svm <- tune.svm(quality~., 
+                  data = wine[rowtrain,], 
+                  kernal = "linear",
+                  cost = data.frame(cost = exp(seq(-20,-15,len=50))))
+linear_svm$best.parameters
+```
+
+
+# Radial
+```{r}
+radi_svm <- tune.svm(quality~., 
+                  data = wine[rowtrain,], 
+                  kernal = "radial",
+                  cost = data.frame(cost = exp(seq(-20,-15,len=50))))
+radi_svm$best.parameters
+```
+
+# only error rate can be obtained
+```{r}
+linea.svm.pred = predict(linear_svm$best.model, newdata = wine[-rowtrain,],type = "prob")
+radial.svm.pred = predict(radi_svm$best.model, newdata = wine[-rowtrain,], type = "prob")
+
+error_linear=1-sum(linea.svm.pred==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
+error_radial=1-sum(radial.svm.pred==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
+
+tree.pred2 = predict(tree2, newdata = wine[-rowtrain,])
+bag.pred2 = predict(bagging, newdata = wine[-rowtrain,])
+rf.pred2 = predict(rf, newdata = wine[-rowtrain,])
+
+error_tree=1-sum(tree.pred2 ==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
+error_bag=1-sum(bag.pred2==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
+error_rf=1-sum(rf.pred2==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
+
+data.frame(model=c("SVM_linear","SVM_radial","Tree","Bagging","Random_forest"),error_rate=c(error_linear,error_radial,error_tree,error_bag,error_rf)) %>% knitr::kable()
 ```
 

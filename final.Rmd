@@ -2,7 +2,7 @@
 title: "Untitled"
 author: "Yue Lai"
 date: "5/15/2020"
-output: html_document
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
@@ -39,7 +39,7 @@ theme1$strip.background$col = rgb(.0, .6, .2, .2)
 trellis.par.set(theme1)
 
 featurePlot(x = wine[,1:11],
-            y = wine$quality，
+            y = wine$quality,
             scales = list(x = list(relation = "free"),
                           y = list(relation = "free")),
             plot = "density", pch = "|",
@@ -62,6 +62,7 @@ ctrl = trainControl(method = "repeatedcv",
 # glm
 
 ```{r}
+set.seed(666)
 model.glm = train(x = wine[rowtrain, 1:11],
                   y = wine$quality[rowtrain],
                   method = "glm",
@@ -72,6 +73,7 @@ model.glm = train(x = wine[rowtrain, 1:11],
 # glmn
 
 ```{r}
+set.seed(666)
 glmngrid = expand.grid(.alpha = seq(0,1,length = 6),
                        .lambda = exp(seq(-8,-2, length = 20)))
 
@@ -88,6 +90,7 @@ model.glmn$bestTune
 # LDA
 
 ```{r}
+set.seed(666)
 model.lda = train(x = wine[rowtrain, 1:11],
                   y = wine$quality[rowtrain],
                   method = "lda",
@@ -98,6 +101,7 @@ model.lda = train(x = wine[rowtrain, 1:11],
 # QDA
 
 ```{r}
+set.seed(666)
 model.qda = train(x = wine[rowtrain, 1:11],
                   y = wine$quality[rowtrain],
                   method = "qda",
@@ -107,24 +111,11 @@ model.qda = train(x = wine[rowtrain, 1:11],
 
 # Naive Bayes
 
-```{r}
-nbgrid = expand.grid(usekernel = c(FALSE, TRUE),
-                     fL = 1,
-                     adjust = seq(.2, 3, by = .2))
-
-model.nb = train(x = wine[rowtrain, 1:11],
-                 y = wine$quality[rowtrain],
-                 method = "nb",
-                 tuneGrid = nbgrid,
-                 metric = "ROC",
-                 trControl = ctrl)
-
-plot(model.nb)
-```
 
 # KNN
 
 ```{r}
+set.seed(666)
 model.knn = train(x = wine[rowtrain, 1:11],
                   y = wine$quality[rowtrain],
                   method = "knn",
@@ -177,9 +168,17 @@ modelNames = c("glm", "glmn", "lda", "qda",
 #               "nb", 
                "knn")
 legend("bottomright", legend = paste0(modelNames, ": ", round(auc, 3)))
+```
 
 
-knn=(predict(model.knn, newdata = wine[-rowtrain,])==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
+```{r}
+glm=1-sum(predict(model.glm, newdata = wine[-rowtrain,])==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
+knn=1-sum(predict(model.knn, newdata = wine[-rowtrain,])==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
+glmn=1-sum(predict(model.glmn, newdata = wine[-rowtrain,])==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
+lda =1-sum(predict(model.lda, newdata = wine[-rowtrain,])==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
+qda =1-sum(predict(model.qda, newdata = wine[-rowtrain,])==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
 
+T1=data.frame(model=c("GLM","GLMN","LDA","QDA","KNN"),Error_rate=c(glm,glmn,lda,qda,knn)) %>% knitr::kable()
+T1
 ```
 
