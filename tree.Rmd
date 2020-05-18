@@ -235,7 +235,7 @@ error_rf=1-sum(rf.pred2==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
 error_bst=1-sum(bst.pred2[,2]==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
 
 # test misclassification
-data.frame(model=c("SVM_linear","SVM_radial","Tree","Bagging","Random_forest","Boosting"),error_rate=c(error_linear,error_radial,error_tree,error_bag,error_rf,error_bst)) %>% knitr::kable()
+data.frame(model=c("SVM_linear","SVM_radial","Tree","Bagging","Random_forest","Boosting"),error_rate=c(error_linear,error_radial,error_tree,error_bag,error_rf,error_bst)) %>% knitr::kable(digits = 3)
 ```
 
 ```{r}

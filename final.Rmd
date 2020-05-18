@@ -13,7 +13,7 @@ library(AppliedPredictiveModeling)
 library(caret)
 library(pROC)
 
-set.seed(666)
+set.seed(1)
 ```
 
 # import data
@@ -58,7 +58,7 @@ ctrl = trainControl(method = "repeatedcv",
 # glm
 
 ```{r}
-set.seed(666)
+set.seed(1)
 model.glm = train(x = wine[rowtrain, 1:11],
                   y = wine$quality[rowtrain],
                   method = "glm",
@@ -69,7 +69,7 @@ model.glm = train(x = wine[rowtrain, 1:11],
 # glmn
 
 ```{r}
-set.seed(666)
+set.seed(1)
 glmngrid = expand.grid(.alpha = seq(0,1,length = 6),
                        .lambda = exp(seq(-8,-2, length = 20)))
 
@@ -86,7 +86,7 @@ model.glmn$bestTune
 # LDA
 
 ```{r}
-set.seed(666)
+set.seed(1)
 model.lda = train(x = wine[rowtrain, 1:11],
                   y = wine$quality[rowtrain],
                   method = "lda",
@@ -97,7 +97,7 @@ model.lda = train(x = wine[rowtrain, 1:11],
 # QDA
 
 ```{r}
-set.seed(666)
+set.seed(1)
 model.qda = train(x = wine[rowtrain, 1:11],
                   y = wine$quality[rowtrain],
                   method = "qda",
@@ -126,7 +126,7 @@ plot(model.nb)
 # KNN
 
 ```{r}
-set.seed(666)
+set.seed(1)
 model.knn = train(x = wine[rowtrain, 1:11],
                   y = wine$quality[rowtrain],
                   method = "knn",
@@ -179,12 +179,12 @@ legend("bottomright", legend = paste0(modelNames, ": ", round(auc, 3)))
 
 
 ```{r}
-glm=1-sum(predict(model.glm, newdata = wine[-rowtrain,]) %>% as.data.frame()==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
-knn=1-sum(predict(model.knn, newdata = wine[-rowtrain,])%>% as.data.frame()==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
-glmn=1-sum(predict(model.glmn, newdata = wine[-rowtrain,])%>% as.data.frame()==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
-lda =1-sum(predict(model.lda, newdata = wine[-rowtrain,])%>% as.data.frame()==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
-qda =1-sum(predict(model.qda, newdata = wine[-rowtrain,])%>% as.data.frame()==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
-nb = 1-sum(predict(model.nb, newdata = wine[-rowtrain,])%>% as.data.frame()==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
+glm=1-sum(predict(model.glm, newdata = wine[-rowtrain,]) ==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
+knn=1-sum(predict(model.knn, newdata = wine[-rowtrain,])==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
+glmn=1-sum(predict(model.glmn, newdata = wine[-rowtrain,])==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
+lda =1-sum(predict(model.lda, newdata = wine[-rowtrain,])==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
+qda =1-sum(predict(model.qda, newdata = wine[-rowtrain,])==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
+nb = 1-sum(predict(model.nb, newdata = wine[-rowtrain,])==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
 
 # test data misclassification rate
 T1=data.frame(model=c("GLM","GLMN","LDA","QDA","NB","KNN"),Error_rate=c(glm,glmn,lda,qda,nb,knn)) %>% knitr::kable(digits = 3)
@@ -193,12 +193,12 @@ T1
 
 ```{r}
 # train data misclassification rate
-glm1=1-sum(predict(model.glm, newdata = wine[rowtrain,]) %>% as.data.frame()==wine[rowtrain,12])/nrow(wine[rowtrain,])
-knn1=1-sum(predict(model.knn, newdata = wine[rowtrain,])%>% as.data.frame()==wine[rowtrain,12])/nrow(wine[rowtrain,])
-glmn1=1-sum(predict(model.glmn, newdata = wine[rowtrain,])%>% as.data.frame()==wine[rowtrain,12])/nrow(wine[rowtrain,])
-lda1 =1-sum(predict(model.lda, newdata = wine[rowtrain,])%>% as.data.frame()==wine[rowtrain,12])/nrow(wine[rowtrain,])
-qda1 =1-sum(predict(model.qda, newdata = wine[rowtrain,])%>% as.data.frame()==wine[rowtrain,12])/nrow(wine[rowtrain,])
-nb1 =1-sum(predict(model.nb, newdata = wine[rowtrain,])%>% as.data.frame()==wine[rowtrain,12])/nrow(wine[rowtrain,])
+glm1=1-sum(predict(model.glm, newdata = wine[rowtrain,]) ==wine[rowtrain,12])/nrow(wine[rowtrain,])
+knn1=1-sum(predict(model.knn, newdata = wine[rowtrain,])==wine[rowtrain,12])/nrow(wine[rowtrain,])
+glmn1=1-sum(predict(model.glmn, newdata = wine[rowtrain,])==wine[rowtrain,12])/nrow(wine[rowtrain,])
+lda1 =1-sum(predict(model.lda, newdata = wine[rowtrain,])==wine[rowtrain,12])/nrow(wine[rowtrain,])
+qda1 =1-sum(predict(model.qda, newdata = wine[rowtrain,])==wine[rowtrain,12])/nrow(wine[rowtrain,])
+nb1 =1-sum(predict(model.nb, newdata = wine[rowtrain,])==wine[rowtrain,12])/nrow(wine[rowtrain,])
 
 T2=data.frame(model=c("GLM","GLMN","LDA","QDA","NB","KNN"),Error_rate=c(glm1,glmn1,lda1,qda1,nb1,knn1)) %>% knitr::kable(digits = 3)
 T2
