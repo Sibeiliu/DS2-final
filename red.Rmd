@@ -90,6 +90,7 @@ model.glm = train(x = red[rowtrain, 1:11],
                   trControl = ctrl)
 summary(model.glm)
 
+
 ```
 
 #glmn
