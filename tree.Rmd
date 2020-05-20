@@ -29,10 +29,10 @@ red = read_excel(path = "./data/wine.xlsx", sheet = "red") %>%
 white = read_excel(path = "./data/wine.xlsx", sheet = "white") %>% 
   janitor::clean_names() 
 
-wine = data.frame(rbind(red, white))
+#wine = data.frame(rbind(red, white))
 
-wine = wine %>% 
-  mutate(quality = as.factor(ifelse(quality > 5, "good", "bad")))
+wine = red %>% 
+  mutate(quality = as.factor(ifelse(quality > 6.5, "good", "bad")))
 ```
 
 Divide the data into two part (training and test)
@@ -52,17 +52,19 @@ ctrl = trainControl(method = "repeatedcv",
 
 ```{r}
 ## using caret
-rpart.fit = train(quality~., wine,
-                  subset = rowtrain,
-                  method = "rpart",
-                  tuneGrid = data.frame(cp = exp(seq(-6, -2, len = 20))),
-                  trControl = ctrl,
-                  metric = "ROC")
-ggplot(rpart.fit, highlight = TRUE)
-rpart.plot(rpart.fit$finalModel)
+#rpart.fit = train(quality~., wine,
+ #                 subset = rowtrain,
+  #                method = "rpart",
+   #               tuneGrid = data.frame(cp = exp(seq(-6, -2, len = 20))),
+    #              trControl = ctrl,
+     #             metric = "ROC")
+#ggplot(rpart.fit, highlight = TRUE)
+#rpart.plot(rpart.fit$finalModel)
+#rpart.fit$bestTune
 ```
 
 ```{r}
+set.seed(666)
 library(rpart)
 tree1 = rpart(formula = quality~., data = wine,
               subset = rowtrain,
@@ -71,8 +73,15 @@ cpTable = printcp(tree1)
 plotcp(tree1)
 minErr = which.min(cpTable[,4])
 
-tree2 = prune(tree1, cp = cpTable[minErr, 1])
+# optimal cp value
+cpTable[minErr, 1]
+
+tree2 = prune(tree1, cp = cpTable[minErr, 1])# mse
+tree3=prune(tree1,cp=cpTable[cpTable[,4]<cpTable[minErr,4]+cpTable[minErr,5],1][1])
+# mse
 rpart.plot(tree2)
+# 1se
+rpart.plot(tree3)
 ```
 
 #  bagging and random forests
@@ -144,16 +153,16 @@ summary(bst, las = 2, cBars = 8, cex.names = 0.6)
 ## boosting in train
 ```{r}
 ## (long time to run )
-#gbm.grid_2 <- expand.grid(n.trees = c(2000,3000,4000),
+#gbm.grid_2 <- expand.grid(n.trees = 4586,
  #                  interaction.depth = 1:6,
-#                 shrinkage = c(0.001, 0.003,0.005),
- #               n.minobsinnode = 1)
+  #               shrinkage = c(0.001, 0.003,0.005),
+   #             n.minobsinnode = 1)
 #gbm.fit_2 <- train(quality~., wine[rowtrain,],
- #                 method = "gbm",
+ #                method = "gbm",
   #                tuneGrid = gbm.grid_2,
    #               trControl = ctrl,
     #               metric = "ROC",
-     #            verbose = FALSE)
+     #           verbose = FALSE)
 #ggplot(gbm.fit_2, highlight = TRUE)
 ```
 
@@ -205,20 +214,53 @@ radi_svm$best.parameters
 
 # only error rate can be obtained
 ```{r}
-linea.svm.pred = predict(linear_svm$best.model, newdata = wine[-rowtrain,],type = "prob")
-radial.svm.pred = predict(radi_svm$best.model, newdata = wine[-rowtrain,], type = "prob")
+linea.svm.pred = predict(linear_svm$best.model, newdata = wine[-rowtrain,],type = "prob")%>% as.data.frame()
+radial.svm.pred = predict(radi_svm$best.model, newdata = wine[-rowtrain,], type = "prob")%>% as.data.frame()
 
-error_linear=1-sum(linea.svm.pred==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
+error_linear=1-sum(linea.svm.pred==as.vector(wine[-rowtrain,12]))/nrow(wine[-rowtrain,])
 error_radial=1-sum(radial.svm.pred==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
 
-tree.pred2 = predict(tree2, newdata = wine[-rowtrain,])
-bag.pred2 = predict(bagging, newdata = wine[-rowtrain,])
-rf.pred2 = predict(rf, newdata = wine[-rowtrain,])
+tree.pred2 = predict(tree2, newdata = wine[-rowtrain,],type="class") %>% as.data.frame()
+bag.pred2 = predict(bagging, newdata = wine[-rowtrain,],type="class")%>% as.data.frame()
+rf.pred2 = predict(rf, newdata = wine[-rowtrain,],type="class")%>% as.data.frame()
+bst.pred2 = predict(bst, newdata = wine[-rowtrain,], type = "response") %>% as.data.frame() %>% mutate(label=case_when(
+  .<0.5~"bad",
+  .>0.5~"good"
+))
+
 
 error_tree=1-sum(tree.pred2 ==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
 error_bag=1-sum(bag.pred2==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
 error_rf=1-sum(rf.pred2==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
+error_bst=1-sum(bst.pred2[,2]==wine[-rowtrain,12])/nrow(wine[-rowtrain,])
 
-data.frame(model=c("SVM_linear","SVM_radial","Tree","Bagging","Random_forest"),error_rate=c(error_linear,error_radial,error_tree,error_bag,error_rf)) %>% knitr::kable()
+# test misclassification
+data.frame(model=c("SVM_linear","SVM_radial","Tree","Bagging","Random_forest","Boosting"),error_rate=c(error_linear,error_radial,error_tree,error_bag,error_rf,error_bst)) %>% knitr::kable(digits = 3)
+```
+
+```{r}
+# train data misclassification rate
+linea.svm.pred3 = predict(linear_svm$best.model, newdata = wine[rowtrain,],type = "prob")%>% as.data.frame()
+radial.svm.pred3 = predict(radi_svm$best.model, newdata = wine[rowtrain,], type = "prob")%>% as.data.frame()
+
+error_linear3=1-sum(linea.svm.pred3==wine[rowtrain,12])/nrow(wine[rowtrain,])
+error_radial3=1-sum(radial.svm.pred3==wine[rowtrain,12])/nrow(wine[rowtrain,])
+
+tree.pred3 = predict(tree2, newdata = wine[rowtrain,],type="class") %>% as.data.frame()
+bag.pred3 = predict(bagging, newdata = wine[rowtrain,],type="class")%>% as.data.frame()
+rf.pred3 = predict(rf, newdata = wine[rowtrain,],type="class")%>% as.data.frame()
+bst.pred3 = predict(bst, newdata = wine[rowtrain,], type = "response") %>% as.data.frame() %>% mutate(label=case_when(
+  .<0.5~"bad",
+  .>0.5~"good"
+))
+
+
+error_tree3=1-sum(tree.pred3 ==wine[rowtrain,12])/nrow(wine[rowtrain,])
+error_bag3=1-sum(bag.pred3==wine[rowtrain,12])/nrow(wine[rowtrain,])
+error_rf3=1-sum(rf.pred3==wine[rowtrain,12])/nrow(wine[rowtrain,])
+error_bst3=1-sum(bst.pred3[,2]==wine[rowtrain,12])/nrow(wine[rowtrain,])
+
+# train
+data.frame(model=c("SVM_linear","SVM_radial","Tree","Bagging","Random_forest","Boosting"),error_rate=c(error_linear3,error_radial3,error_tree3,error_bag3,error_rf3,error_bst3)) %>% knitr::kable()
 ```
 
